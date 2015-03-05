@@ -29,9 +29,37 @@ def upgrade(packages=[]):
 
 def remove(packages, purge=False):
     # Remove package(s), purge its files if requested
-    s = pacman("-R%s" % ("n" if purge else ""), packages)
+    s = pacman("-Rc%s" % ("n" if purge else ""), packages)
     if s["code"] != 0:
         raise Exception("Failed to remove: %s" % str(s["stderr"]))
+
+def get_all():
+    # List all packages, installed and not installed
+    interim, results = {}, []
+    s = pacman("-Q")
+    if s["code"] != 0:
+        raise Exception("Failed to get installed list: %s" % str(s["stderr"]))
+    for x in s["stdout"].split('\n'):
+        if not x.split():
+            continue
+        x = x.split(' ')
+        interim[x[0]] = {"id": x[0], "version": x[1], "upgradable": False, "installed": True}
+    s = pacman("-Sl")
+    if s["code"] != 0:
+        raise Exception("Failed to get available list: %s" % str(s["stderr"]))
+    for x in s["stdout"].split('\n'):
+        if not x.split():
+            continue
+        x = x.split(' ')
+        if interim.has_key(x[1]):
+            interim[x[1]]["repo"] = x[0]
+            if interim[x[1]]["version"] != x[2]:
+                interim[x[1]]["upgradable"] = x[2]
+        else:
+            results.append({"id": x[1], "repo": x[0], "version": x[2], "upgradable": False, "installed": False})
+    for x in interim:
+        results.append(interim[x])
+    return results
 
 def get_installed():
     # List all installed packages
@@ -43,7 +71,7 @@ def get_installed():
         if not x.split():
             continue
         x = x.split(' ')
-        interim[x[0]] = {"id": x[0], "version": x[1], "upgradable": False}
+        interim[x[0]] = {"id": x[0], "version": x[1], "upgradable": False, "installed": True}
     s = pacman("-Qu")
     if s["code"] != 0:
         raise Exception("Failed to get upgradable list: %s" % str(s["stderr"]))
@@ -74,17 +102,17 @@ def get_available():
         results.append({"id": x[1], "repo": x[0], "version": x[2]})
     return results
 
-def get_info(package, installed=True):
+def get_info(package):
     # Get package information from database
     interim = []
-    s = pacman("-Qi" if installed else "-Si", package)
+    s = pacman("-Qi" if is_installed(package) else "-Si", package)
     if s["code"] != 0:
         raise Exception("Failed to get info: %s" % str(s["stderr"]))
     for x in s["stdout"].split('\n'):
         if not x.split():
             continue
         if ':' in x:
-            x = x.split(':')
+            x = x.split(':', 1)
             interim.append((x[0].strip(), x[1].strip()))
         else:
             data = interim[-1]
@@ -118,7 +146,8 @@ def pacman(flags, pkgs=[], eflgs=[]):
     if not pkgs:
         cmd = ["pacman", "--noconfirm", flags]
     elif type(pkgs) == list:
-        cmd = ["pacman", "--noconfirm", flags, ' '.join(pkgs)]
+        cmd = ["pacman", "--noconfirm", flags]
+        cmd += pkgs
     else:
         cmd = ["pacman", "--noconfirm", flags, pkgs]
     if eflgs and any(eflgs):
