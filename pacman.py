@@ -1,7 +1,7 @@
-#
-# python-pacman - (c) Jacob Cook 2015
-# Licensed under GPLv3
-#
+"""
+ python-pacman - (c) Jacob Cook 2015
+ Licensed under GPLv3
+"""
 
 import subprocess
 
@@ -51,7 +51,7 @@ def get_all():
         if not x.split():
             continue
         x = x.split(' ')
-        if interim.has_key(x[1]):
+        if x[1] in interim:
             interim[x[1]]["repo"] = x[0]
             if interim[x[1]]["version"] != x[2]:
                 interim[x[1]]["upgradable"] = x[2]
@@ -80,7 +80,7 @@ def get_installed():
             continue
         x = x.split(' -> ')
         name = x[0].split(' ')[0]
-        if interim.has_key(name):
+        if name in interim:
             r = interim[name]
             r["upgradable"] = x[1]
             interim[name] = r
@@ -155,6 +155,6 @@ def pacman(flags, pkgs=[], eflgs=[]):
         cmd += eflgs
     p = subprocess.Popen(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     data = p.communicate()
-    data = {"code": p.returncode, "stdout": data[0], 
+    data = {"code": p.returncode, "stdout": data[0],
         "stderr": data[1].rstrip('\n')}
     return data
