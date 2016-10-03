@@ -54,7 +54,7 @@ def get_all():
             "installed": True
         }
     s = pacman("-Sl")
-    if s["code"] != 0 and s["stderr"]:
+    if s["code"] != 0:
         raise Exception(
             "Failed to get available list: {0}".format(s["stderr"])
         )
@@ -93,7 +93,7 @@ def get_installed():
             "installed": True
         }
     s = pacman("-Qu")
-    if s["code"] != 0:
+    if s["code"] != 0 and s["stderr"]:
         raise Exception(
             "Failed to get upgradable list: {0}".format(s["stderr"])
         )
