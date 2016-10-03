@@ -4,7 +4,7 @@ from distutils.core import setup
 
 setup(
     name='python-pacman',
-    version='0.3',
+    version='0.4',
     description='Simple Python interface to Arch Linux package manager (pacman)',
     author='Jacob Cook',
     author_email='jacob@coderouge.co',

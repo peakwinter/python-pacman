@@ -12,11 +12,13 @@ def install(packages, needed=True):
     if s["code"] != 0:
         raise Exception("Failed to install: {0}".format(s["stderr"]))
 
+
 def refresh():
     # Refresh the local package information database
     s = pacman("-Sy")
     if s["code"] != 0:
         raise Exception("Failed to refresh database: {0}".format(s["stderr"]))
+
 
 def upgrade(packages=[]):
     # Upgrade packages; if unspecified upgrade all packages
@@ -27,59 +29,79 @@ def upgrade(packages=[]):
     if s["code"] != 0:
         raise Exception("Failed to upgrade packages: {0}".format(s["stderr"]))
 
+
 def remove(packages, purge=False):
     # Remove package(s), purge its files if requested
     s = pacman("-Rc{0}".format("n" if purge else ""), packages)
     if s["code"] != 0:
         raise Exception("Failed to remove: {0}".format(s["stderr"]))
 
+
 def get_all():
     # List all packages, installed and not installed
     interim, results = {}, []
     s = pacman("-Q")
     if s["code"] != 0:
-        raise Exception("Failed to get installed list: {0}".format(s["stderr"]))
-    for x in s["stdout"].split(b'\n'):
+        raise Exception(
+            "Failed to get installed list: {0}".format(s["stderr"])
+        )
+    for x in s["stdout"].split('\n'):
         if not x.split():
             continue
-        x = x.split(b' ')
-        interim[x[0]] = {"id": x[0], "version": x[1], "upgradable": False, "installed": True}
+        x = x.split(' ')
+        interim[x[0]] = {
+            "id": x[0], "version": x[1], "upgradable": False,
+            "installed": True
+        }
     s = pacman("-Sl")
-    if s["code"] != 0:
-        raise Exception("Failed to get available list: {0}".format(s["stderr"]))
-    for x in s["stdout"].split(b'\n'):
+    if s["code"] != 0 and s["stderr"]:
+        raise Exception(
+            "Failed to get available list: {0}".format(s["stderr"])
+        )
+    for x in s["stdout"].split('\n'):
         if not x.split():
             continue
-        x = x.split(b' ')
+        x = x.split(' ')
         if x[1] in interim:
             interim[x[1]]["repo"] = x[0]
             if interim[x[1]]["version"] != x[2]:
                 interim[x[1]]["upgradable"] = x[2]
         else:
-            results.append({"id": x[1], "repo": x[0], "version": x[2], "upgradable": False, "installed": False})
+            results.append({
+                "id": x[1], "repo": x[0], "version": x[2], "upgradable": False,
+                "installed": False
+            })
     for x in interim:
         results.append(interim[x])
     return results
+
 
 def get_installed():
     # List all installed packages
     interim = {}
     s = pacman("-Q")
     if s["code"] != 0:
-        raise Exception("Failed to get installed list: {0}".format(s["stderr"]))
-    for x in s["stdout"].split(b'\n'):
+        raise Exception(
+            "Failed to get installed list: {0}".format(s["stderr"])
+        )
+    for x in s["stdout"].split('\n'):
         if not x.split():
             continue
-        x = x.split(b' ')
-        interim[x[0]] = {"id": x[0], "version": x[1], "upgradable": False, "installed": True}
+        x = x.split(' ')
+        interim[x[0]] = {
+            "id": x[0], "version": x[1], "upgradable": False,
+            "installed": True
+        }
     s = pacman("-Qu")
     if s["code"] != 0:
-        raise Exception("Failed to get upgradable list: {0}".format(s["stderr"]))
-    for x in s["stdout"].split(b'\n'):
+        raise Exception(
+            "Failed to get upgradable list: {0}".format(s["stderr"])
+        )
+    for x in s["stdout"].split('\n'):
         if not x.split():
             continue
-        x = x.split(b' -> ')
-        name = x[0].split(b' ')[0]
+        x = x.split(' -> ')
+        name = x[0].split(' ')[0]
         if name in interim:
             r = interim[name]
             r["upgradable"] = x[1]
@@ -89,18 +111,22 @@ def get_installed():
         results.append(interim[x])
     return results
 
+
 def get_available():
     # List all available packages
     results = []
     s = pacman("-Sl")
     if s["code"] != 0:
-        raise Exception("Failed to get available list: {0}".format(s["stderr"]))
-    for x in s["stdout"].split(b'\n'):
+        raise Exception(
+            "Failed to get available list: {0}".format(s["stderr"])
+        )
+    for x in s["stdout"].split('\n'):
         if not x.split():
             continue
-        x = x.split(b' ')
+        x = x.split(' ')
         results.append({"id": x[1], "repo": x[0], "version": x[2]})
     return results
+
 
 def get_info(package):
     # Get package information from database
@@ -108,38 +134,42 @@ def get_info(package):
     s = pacman("-Qi" if is_installed(package) else "-Si", package)
     if s["code"] != 0:
         raise Exception("Failed to get info: {0}".format(s["stderr"]))
-    for x in s["stdout"].split(b'\n'):
+    for x in s["stdout"].split('\n'):
         if not x.split():
             continue
-        if b':' in x:
-            x = x.split(b':', 1)
+        if ':' in x:
+            x = x.split(':', 1)
             interim.append((x[0].strip(), x[1].strip()))
         else:
             data = interim[-1]
-            data = (data[0], data[1] + b"  " + x.strip())
+            data = (data[0], data[1] + "  " + x.strip())
             interim[-1] = data
     result = {}
     for x in interim:
         result[x[0]] = x[1]
     return result
 
+
 def needs_for(packages):
     # Get list of not-yet-installed dependencies of these packages
     s = pacman("-Sp", packages, ["--print-format", "%n"])
     if s["code"] != 0:
         raise Exception("Failed to get requirements: {0}".format(s["stderr"]))
-    return [x for x in s["stdout"].split(b'\n') if x]
+    return [x for x in s["stdout"].split('\n') if x]
+
 
 def depends_for(packages):
     # Get list of installed packages that depend on these
     s = pacman("-Rpc", packages, ["--print-format", "%n"])
     if s["code"] != 0:
         raise Exception("Failed to get depends: {0}".format(s["stderr"]))
-    return [x for x in s["stdout"].split(b'\n') if x]
+    return [x for x in s["stdout"].split('\n') if x]
+
 
 def is_installed(package):
     # Return True if the specified package is installed
     return pacman("-Q", package)["code"] == 0
+
 
 def pacman(flags, pkgs=[], eflgs=[]):
     # Subprocess wrapper, get all data
@@ -155,6 +185,6 @@ def pacman(flags, pkgs=[], eflgs=[]):
         cmd += eflgs
     p = subprocess.Popen(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     data = p.communicate()
-    data = {"code": p.returncode, "stdout": data[0],
-            "stderr": data[1].rstrip(b'\n')}
+    data = {"code": p.returncode, "stdout": data[0].decode(),
+            "stderr": data[1].rstrip(b'\n').decode()}
     return data
