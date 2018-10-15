@@ -4,6 +4,7 @@
 """
 
 import subprocess
+from shlex import quote
 
 
 def install(packages, needed=True):
@@ -177,7 +178,7 @@ def pacman(flags, pkgs=[], eflgs=[]):
         cmd = ["pacman", "--noconfirm", flags]
     elif type(pkgs) == list:
         cmd = ["pacman", "--noconfirm", flags]
-        cmd += pkgs
+        cmd += [quote(s) for s in pkgs]
     else:
         cmd = ["pacman", "--noconfirm", flags, pkgs]
     if eflgs and any(eflgs):
