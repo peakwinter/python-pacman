@@ -4,14 +4,14 @@ from distutils.core import setup
 
 setup(
     name='python-pacman',
-    version='0.4.1',
+    version='0.4.2',
     description='Simple Python interface to Arch Linux package manager (pacman)',
     author='Jacob Cook',
     author_email='jacob@coderouge.co',
-    url='https://git.coderouge.co/coderouge/python-pacman',
+    url='https://github.com/peakwinter/python-pacman',
     py_modules=['pacman'],
     keywords = ['pacman', 'arch linux'],
-    download_url = 'https://git.coderouge.co/coderouge/python-pacman/repository/archive.tar.gz?ref=0.2',
+    download_url = 'https://github.com/peakwinter/python-pacman/archive/master.zip',
     license = 'GPLv3',
     classifiers = [
     	"Development Status :: 3 - Alpha",
