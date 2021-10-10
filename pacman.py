@@ -3,7 +3,7 @@
  Licensed under GPLv3
 """
 
-import subprocess, os, shutil
+import subprocess, os, shutil, requests
 from shlex import quote
 
 
@@ -192,6 +192,27 @@ def depends_for(packages):
 def is_installed(package):
     # Return True if the specified package is installed
     return pacman("-Q", package)["code"] == 0
+
+
+def is_aur(package):
+    '''
+    Return True if the given package is an AUR package.
+    '''
+    try:
+        # search in official pacman repo
+        matched_packages = pacman('-Ssq', package, pacman_bin="pacman").get('stdout').split('\n')
+        for i in matched_packages:
+            if i == package:
+                # find a match in official repo. not aur.
+                return False
+
+        response = requests.request(method='post', url="https://aur.archlinux.org/packages/?O=0&SeB=N&K={}&outdated=&SB=n&SO=a&PP=50&do_Search=Go".format(package))
+        if "No packages matched your search criteria." in response.text:
+            return False
+        return True
+
+    except Exception as e:
+        return False
 
 
 def pacman(flags, pkgs=[], eflgs=[], pacman_bin=__PACMAN_BIN):
