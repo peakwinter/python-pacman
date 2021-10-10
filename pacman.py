@@ -3,8 +3,30 @@
  Licensed under GPLv3
 """
 
-import subprocess
+import subprocess, os, shutil
 from shlex import quote
+
+
+__PACMAN_BIN = shutil.which("pacman")   # default to use the system's pacman binary
+
+
+def get_bin():
+    '''
+    Return the current pacman binary being used.
+    '''
+    return __PACMAN_BIN
+
+
+def set_bin(path):
+    '''
+    Set a custom pacman binary. 
+    If the pacman binary is set to an AUR helper, this module may also be used to interact with AUR.
+    '''
+    global __PACMAN_BIN
+    if isinstance(path, str) and (os.path.isfile(path) or os.path.isfile(shutil.which(path))):
+        __PACMAN_BIN = shutil.which(path)
+    else:
+        raise IOError("This executable does not exist.")
 
 
 def install(packages, needed=True):
@@ -129,10 +151,10 @@ def get_available():
     return results
 
 
-def get_info(package):
+def get_info(package, pacman_bin=__PACMAN_BIN):
     # Get package information from database
     interim = []
-    s = pacman("-Qi" if is_installed(package) else "-Si", package)
+    s = pacman("-Qi" if is_installed(package) else "-Si", package, pacman_bin=pacman_bin)
     if s["code"] != 0:
         raise Exception("Failed to get info: {0}".format(s["stderr"]))
     for x in s["stdout"].split('\n'):
@@ -172,15 +194,15 @@ def is_installed(package):
     return pacman("-Q", package)["code"] == 0
 
 
-def pacman(flags, pkgs=[], eflgs=[]):
+def pacman(flags, pkgs=[], eflgs=[], pacman_bin=__PACMAN_BIN):
     # Subprocess wrapper, get all data
     if not pkgs:
-        cmd = ["pacman", "--noconfirm", flags]
+        cmd = [pacman_bin, "--noconfirm", flags]
     elif type(pkgs) == list:
-        cmd = ["pacman", "--noconfirm", flags]
+        cmd = [pacman_bin, "--noconfirm", flags]
         cmd += [quote(s) for s in pkgs]
     else:
-        cmd = ["pacman", "--noconfirm", flags, pkgs]
+        cmd = [pacman_bin, "--noconfirm", flags, pkgs]
     if eflgs and any(eflgs):
         eflgs = [x for x in eflgs if x]
         cmd += eflgs
