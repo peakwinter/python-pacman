@@ -31,21 +31,21 @@ def set_bin(path):
 
 
 def install(packages, needed=True):
-    # Install package(s)
+    '''Install package(s)'''
     s = pacman("-S", packages, ["--needed" if needed else None])
     if s["code"] != 0:
         raise Exception("Failed to install: {0}".format(s["stderr"]))
 
 
 def refresh():
-    # Refresh the local package information database
+    '''Refresh the local package information database'''
     s = pacman("-Sy")
     if s["code"] != 0:
         raise Exception("Failed to refresh database: {0}".format(s["stderr"]))
 
 
-def upgrade(packages=[]):
-    # Upgrade packages; if unspecified upgrade all packages
+def upgrade(packages=None):
+    '''Upgrade packages; if unspecified upgrade all packages'''
     if packages:
         install(packages)
     else:
@@ -55,14 +55,14 @@ def upgrade(packages=[]):
 
 
 def remove(packages, purge=False):
-    # Remove package(s), purge its files if requested
+    '''Remove package(s), purge its files if requested'''
     s = pacman("-Rc{0}".format("n" if purge else ""), packages)
     if s["code"] != 0:
         raise Exception("Failed to remove: {0}".format(s["stderr"]))
 
 
 def get_all():
-    # List all packages, installed and not installed
+    '''List all packages, installed and not installed'''
     interim, results = {}, []
     s = pacman("-Q")
     if s["code"] != 0:
@@ -101,7 +101,7 @@ def get_all():
 
 
 def get_installed():
-    # List all installed packages
+    '''List all installed packages'''
     interim = {}
     s = pacman("-Q")
     if s["code"] != 0:
@@ -137,7 +137,7 @@ def get_installed():
 
 
 def get_available():
-    # List all available packages
+    '''List all available packages'''
     results = []
     s = pacman("-Sl")
     if s["code"] != 0:
@@ -152,10 +152,10 @@ def get_available():
     return results
 
 
-def get_info(package, pacman_bin=__PACMAN_BIN):
-    # Get package information from database
+def get_info(package):
+    '''Get package information from database'''
     interim = []
-    s = pacman("-Qi" if is_installed(package) else "-Si", package, pacman_bin=pacman_bin)
+    s = pacman("-Qi" if is_installed(package) else "-Si", package, pacman_bin=get_bin())
     if s["code"] != 0:
         raise Exception("Failed to get info: {0}".format(s["stderr"]))
     for x in s["stdout"].split('\n'):
@@ -219,7 +219,7 @@ def is_aur(package):
 
 
 def pacman(flags, pkgs=[], eflgs=[], pacman_bin=__PACMAN_BIN):
-    # Subprocess wrapper, get all data
+    '''Subprocess wrapper, get all data'''
     if not pkgs:
         cmd = [pacman_bin, "--noconfirm", flags]
     elif type(pkgs) == list:
