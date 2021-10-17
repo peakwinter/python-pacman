@@ -3,7 +3,8 @@
  Licensed under GPLv3
 """
 
-import subprocess, os, shutil, requests
+import subprocess, os, shutil
+from urllib import request
 from shlex import quote
 
 
@@ -206,8 +207,10 @@ def is_aur(package):
                 # find a match in official repo. not aur.
                 return False
 
-        response = requests.request(method='post', url="https://aur.archlinux.org/packages/?O=0&SeB=N&K={}&outdated=&SB=n&SO=a&PP=50&do_Search=Go".format(package))
-        if "No packages matched your search criteria." in response.text:
+        req = request.Request("https://aur.archlinux.org/packages/?O=0&SeB=N&K={}&outdated=&SB=n&SO=a&PP=50&do_Search=Go".format(package), data=b'')
+        res = request.urlopen(req)
+        data = res.read()
+        if b"No packages matched your search criteria." in data:
             return False
         return True
 
