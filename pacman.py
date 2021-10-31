@@ -175,35 +175,35 @@ def get_info(package):
         raise Exception("Failed to get info: {0}".format(s["stderr"]))
 
     content = s["stdout"].split('\n')
-    for lineNum in range(len(content)-1):
-        if 'Optional Deps' not in content[lineNum]:
-            if ':' in content[lineNum]:
-                content[lineNum] = content[lineNum].split(':', 1)
+    for line_num in range(len(content)-1):
+        if 'Optional Deps' not in content[line_num]:
+            if ':' in content[line_num]:
+                content[line_num] = content[line_num].split(':', 1)
                 interim.append(
-                    (content[lineNum][0].strip(), content[lineNum][1].strip()))
+                    (content[line_num][0].strip(), content[line_num][1].strip()))
 
         else:
             opt_dep = {}
             i = 0
 
-            endLine = [i for i in range(
+            end_line = [i for i in range(
                 len(content)) if 'Required By' in content[i]][0]
 
             try :
-                if ':' in content[lineNum]:
-                    content[lineNum] = content[lineNum].split(':')
-                    opt_dep[content[lineNum]
-                            [1].strip()] = content[lineNum][2].strip()
+                if ':' in content[line_num]:
+                    content[line_num] = content[line_num].split(':')
+                    opt_dep[content[line_num]
+                            [1].strip()] = content[line_num][2].strip()
             except:
                 pass
 
-            lineNum += 1
-            for i in range(lineNum, endLine):
+            line_num += 1
+            for i in range(line_num, end_line):
                 if ':' in content[i]:
                     content[i] = content[i].split(':', 1)
                     opt_dep[content[i]
                             [0].strip()] = content[i][1].strip()
-            lineNum = endLine
+            line_num = end_line
             interim.append(("Optional Dependencies", opt_dep))
 
     result = dict(interim)
