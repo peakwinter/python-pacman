@@ -31,21 +31,30 @@ def set_bin(path):
 
 
 def install(packages, needed=True):
-    '''Install package(s)'''
+    """
+    Install package\n
+    Parameters::\n
+    packages <str>
+    needed <bool>
+    """
     s = pacman("-S", packages, ["--needed" if needed else None])
     if s["code"] != 0:
         raise Exception("Failed to install: {0}".format(s["stderr"]))
 
 
 def refresh():
-    '''Refresh the local package information database'''
+    """Refresh the local package information database"""
     s = pacman("-Sy")
     if s["code"] != 0:
         raise Exception("Failed to refresh database: {0}".format(s["stderr"]))
 
 
-def upgrade(packages=None):
-    '''Upgrade packages; if unspecified upgrade all packages'''
+def upgrade(packages=[]):
+    """
+    Upgrade packages
+    Parameters::\n
+    packages <str> [default = all]
+    """
     if packages:
         install(packages)
     else:
@@ -55,14 +64,19 @@ def upgrade(packages=None):
 
 
 def remove(packages, purge=False):
-    '''Remove package(s), purge its files if requested'''
+    """
+    Remove package(s) and purge its files
+    Parameters ::\n
+    packages <str>
+    purge <bool>
+    """
     s = pacman("-Rc{0}".format("n" if purge else ""), packages)
     if s["code"] != 0:
         raise Exception("Failed to remove: {0}".format(s["stderr"]))
 
 
 def get_all():
-    '''List all packages, installed and not installed'''
+    """List all packages"""
     interim, results = {}, []
     s = pacman("-Q")
     if s["code"] != 0:
@@ -101,7 +115,7 @@ def get_all():
 
 
 def get_installed():
-    '''List all installed packages'''
+    """List all installed packages"""
     interim = {}
     s = pacman("-Q")
     if s["code"] != 0:
@@ -137,7 +151,7 @@ def get_installed():
 
 
 def get_available():
-    '''List all available packages'''
+    """List all available packages"""
     results = []
     s = pacman("-Sl")
     if s["code"] != 0:
@@ -153,29 +167,51 @@ def get_available():
 
 
 def get_info(package):
-    '''Get package information from database'''
+    """Get package information from database"""
     interim = []
-    s = pacman("-Qi" if is_installed(package) else "-Si", package, pacman_bin=get_bin())
+    s = pacman("-Qi" if is_installed(package) else "-Si", package)
+
     if s["code"] != 0:
         raise Exception("Failed to get info: {0}".format(s["stderr"]))
-    for x in s["stdout"].split('\n'):
-        if not x.split():
-            continue
-        if ':' in x:
-            x = x.split(':', 1)
-            interim.append((x[0].strip(), x[1].strip()))
+
+    content = s["stdout"].split('\n')
+    for lineNum in range(len(content)-1):
+        if 'Optional Deps' not in content[lineNum]:
+            if ':' in content[lineNum]:
+                content[lineNum] = content[lineNum].split(':', 1)
+                interim.append(
+                    (content[lineNum][0].strip(), content[lineNum][1].strip()))
+
         else:
-            data = interim[-1]
-            data = (data[0], data[1] + "  " + x.strip())
-            interim[-1] = data
-    result = {}
-    for x in interim:
-        result[x[0]] = x[1]
+            opt_dep = {}
+            i = 0
+
+            endLine = [i for i in range(
+                len(content)) if 'Required By' in content[i]][0]
+
+            try :
+                if ':' in content[lineNum]:
+                    content[lineNum] = content[lineNum].split(':')
+                    opt_dep[content[lineNum]
+                            [1].strip()] = content[lineNum][2].strip()
+            except:
+                pass
+
+            lineNum += 1
+            for i in range(lineNum, endLine):
+                if ':' in content[i]:
+                    content[i] = content[i].split(':', 1)
+                    opt_dep[content[i]
+                            [0].strip()] = content[i][1].strip()
+            lineNum = endLine
+            interim.append(("Optional Dependencies", opt_dep))
+
+    result = dict(interim)
     return result
 
 
 def needs_for(packages):
-    # Get list of not-yet-installed dependencies of these packages
+    """Get list of not-yet-installed dependencies of these packages"""
     s = pacman("-Sp", packages, ["--print-format", "%n"])
     if s["code"] != 0:
         raise Exception("Failed to get requirements: {0}".format(s["stderr"]))
@@ -183,7 +219,7 @@ def needs_for(packages):
 
 
 def depends_for(packages):
-    # Get list of installed packages that depend on these
+    """Get list of installed packages that depend on these"""
     s = pacman("-Rpc", packages, ["--print-format", "%n"])
     if s["code"] != 0:
         raise Exception("Failed to get depends: {0}".format(s["stderr"]))
@@ -191,7 +227,7 @@ def depends_for(packages):
 
 
 def is_installed(package):
-    # Return True if the specified package is installed
+    """Return True if the specified package is installed"""
     return pacman("-Q", package)["code"] == 0
 
 
@@ -219,7 +255,7 @@ def is_aur(package):
 
 
 def pacman(flags, pkgs=[], eflgs=[], pacman_bin=__PACMAN_BIN):
-    '''Subprocess wrapper, get all data'''
+    """Subprocess wrapper, get all data"""
     if not pkgs:
         cmd = [pacman_bin, "--noconfirm", flags]
     elif type(pkgs) == list:
