@@ -2,8 +2,7 @@
  python-pacman - (c) Jacob Cook 2015
  Licensed under GPLv3
 """
-
-import subprocess, os, shutil
+import subprocess, os, shutil, re
 from urllib import request
 from shlex import quote
 
@@ -254,15 +253,59 @@ def is_aur(package):
         return False
 
 
-def pacman(flags, pkgs=[], eflgs=[], pacman_bin=__PACMAN_BIN):
+def contents_of(packages):
+    """Get list of files and directories that are owned by these packages"""
+    s = pacman("-Ql", packages)
+    if s["code"] != 0:
+        raise Exception("Failed to get contents: {0}".format(s["stderr"]))
+    ret = dict()
+    for x in s["stdout"].split('\n'):
+        space = x.find(' ')
+        package = x[:space+ 1]
+        file = x[space:]
+        if package not in ret:
+            ret[package] = []
+        ret[package].append(file)
+
+    if type(packages) == str:
+        return ret[packages] if packages in ret else None
+
+    return ret
+
+
+def owner_of(files, include_version=True):
+    """Get owner of these files and directories"""
+    s = pacman("-Qo", files)
+    if s["code"] != 0:
+        raise Exception("Failed to get owner: {0}".format(s["stderr"]))
+    owner_re = re.compile(r'(.+?) is owned by ([^ ]+) (.*)')
+    ret = dict()
+    for x in s["stdout"].split('\n'):
+        matches = owner_re.match(x)
+        if not matches:
+            continue
+        file = matches.group(1)
+        package = matches.group(2)
+        version = matches.group(3)
+        ret[file] = (package, version) if include_version else package
+
+    if type(files) == str:
+        return ret[files] if files in ret else None
+
+    return ret
+
+
+def pacman(flags, targets=[], eflgs=[], pacman_bin=__PACMAN_BIN):
     """Subprocess wrapper, get all data"""
-    if not pkgs:
-        cmd = [pacman_bin, "--noconfirm", flags]
-    elif type(pkgs) == list:
-        cmd = [pacman_bin, "--noconfirm", flags]
-        cmd += [quote(s) for s in pkgs]
+    if type(flags) != list:
+        flags = [flags]
+    flags = ['--noconfirm'] + flags
+    if not targets:
+        cmd = [pacman_bin] + flags
+    elif type(targets) == list:
+        cmd = [pacman_bin] + flags + [quote(s) for s in targets]
     else:
-        cmd = [pacman_bin, "--noconfirm", flags, pkgs]
+        cmd = [pacman_bin] + flags + [targets]
     if eflgs and any(eflgs):
         eflgs = [x for x in eflgs if x]
         cmd += eflgs
