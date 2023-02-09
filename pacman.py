@@ -260,9 +260,11 @@ def contents_of(packages):
         raise Exception("Failed to get contents: {0}".format(s["stderr"]))
     ret = dict()
     for x in s["stdout"].split('\n'):
+        if not x:
+            continue
         space = x.find(' ')
-        package = x[:space+ 1]
-        file = x[space:]
+        package = x[:space]
+        file = x[space + 1:]
         if package not in ret:
             ret[package] = []
         ret[package].append(file)
@@ -281,6 +283,8 @@ def owner_of(files, include_version=True):
     owner_re = re.compile(r'(.+?) is owned by ([^ ]+) (.*)')
     ret = dict()
     for x in s["stdout"].split('\n'):
+        if not x:
+            continue
         matches = owner_re.match(x)
         if not matches:
             continue
